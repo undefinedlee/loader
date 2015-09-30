@@ -1,20 +1,20 @@
 /**
  * 模块加载器
  * define
- * fan.use
- * fan.config
- * fan.version
+ * momo.use
+ * momo.config
+ * momo.version
  * require.async
  * 
  * 模块路径规则：group/mod/version/path
  */
 ;(function(global, util){
-	if(global.fan){
+	if(global.momo){
 		return;
 	}
 	
 	// 设置全局命名空间
-	var fan = global.fan = {};
+	var momo = global.momo = {};
 	
 	// 配置
 	var config = {
@@ -269,7 +269,7 @@
 						return require(id);
 					};
 					
-					_require.async = fan.use;
+					_require.async = momo.use;
 					
 					seed.factory(_require, tmpMod.exports, tmpMod);
 					
@@ -324,7 +324,7 @@
 	/**
 	 * 
 	 */
-	fan.use = function(ids, callback){
+	momo.use = function(ids, callback){
 		// 转为数组
 		ids = [].concat(ids);
 		global.define("", [].concat(ids), function(){
@@ -338,7 +338,7 @@
 	/**
 	 * 配置加载参数
 	 */
-	fan.config = function(_config){
+	momo.config = function(_config){
 		for(var key in _config){
 			if(_config.hasOwnProperty(key)){
 				config[key] = _config[key];
@@ -348,20 +348,20 @@
 	
 	/**
 	 * 配置版本号
-	 * fan.version("groupName", {
+	 * momo.version("groupName", {
 	 * 		"modName": "v.1",
 	 * 		"modName": "v.2"
 	 * })
 	 */
-	fan.version = function(group, version){
+	momo.version = function(group, version){
 		for(var modName in version){
 			versions[[group, modName].join("/")] = version[modName];
 		}
 	};
 	
 	// 兼容seajs
-	//global.seajs = global.fan;
-	//global.mods = mods;
+	// global.seajs = global.momo;
+	// global.mods = mods;
 })(this, (function(){
 	// 本地存储模块
 	var store,
