@@ -360,8 +360,8 @@
 	};
 	
 	// 兼容seajs
-	global.seajs = global.fan;
-	global.mods = mods;
+	//global.seajs = global.fan;
+	//global.mods = mods;
 })(this, (function(){
 	// 本地存储模块
 	var store,
