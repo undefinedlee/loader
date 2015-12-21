@@ -120,7 +120,7 @@
 	var requestList = [];
 	var requestHandler = null;
 	function request(id){
-		if(!id || mods[id]){
+		if(!id || typeof mods[id] !== "undefined"){
 			return;
 		}
 		
@@ -367,37 +367,21 @@
 	var store,
 		win = window,
 		localStorageName = 'localStorage',
-		globalStorageName = 'globalStorage',
 		storage;
 	
-	if(JSON){
-		if (localStorageName in win && win[localStorageName]) {
-			storage = win[localStorageName];
-			store = {
-				get: function (key) {
-					return storage.getItem(key);
-				},
-				set: function (key, val) {
-					storage.setItem(key, val);
-				},
-				remove: function (key) {
-					storage.removeItem(key);
-				}
-			};
-		} else if (globalStorageName in win && win[globalStorageName]) {
-			storage = win[globalStorageName][win.location.hostname];
-			store = {
-				get: function (key) {
-					return storage[key] && storage[key].value;
-				},
-				set: function (key, val) {
-					storage[key] = val;
-				},
-				remove: function (key) {
-					delete storage[key];
-				}
-			};
-		}
+	if (localStorageName in win && win[localStorageName]) {
+		storage = win[localStorageName];
+		store = {
+			get: function (key) {
+				return storage.getItem(key);
+			},
+			set: function (key, val) {
+				storage.setItem(key, val);
+			},
+			remove: function (key) {
+				storage.removeItem(key);
+			}
+		};
 	}
 	
 	function parseJson(data){
@@ -407,49 +391,60 @@
 			return null;
 		}
 	}
-	
-	var modManageKey = "mod-visit-manager";
-	function getModManage(){
-		var config = store.get(modManageKey);
-		if(config && (config = JSON.parse(config))){
-			return config;
-		}else{
-			return {};
-		}
-	}
-	
-	function setModManage(config){
-		store.set(modManageKey, JSON.stringify(config));
-	}
-	
-	function getNow(){
-		return ((new Date() - new Date(2015, 0, 1)) / (24 * 3600 * 1000)) | 0;
-	}
-	function updateModVisitTime(id){
-		var config = getModManage();
-		config[id] = getNow();
-		setModManage(config);
-	}
-	
-	function deleteMod(id){
-		var config = getModManage();
-		delete config[id];
-		setModManage(config);
-	}
-	// 30天未访问模块删除
-	var expires = 30;
-	function clearMod(){
-		var config = getModManage();
-		var now = getNow();
-		for(var id in config){
-			if(now - config[id] > expires){
-				delete config[id];
+
+	var ModVisitManage = (function(){
+		var modManageKey = "mod-visit-manager";
+
+		function getModManage(){
+			var config = store.get(modManageKey);
+			if(config && (config = JSON.parse(config))){
+				return config;
+			}else{
+				return {};
 			}
 		}
-		setModManage(config);
-	}
+		
+		function setModManage(config){
+			store.set(modManageKey, JSON.stringify(config));
+		}
+
+		// 获取当前相对于2015年1月1日所过去的天数
+		function getNow(){
+			return ((new Date() - new Date(2015, 0, 1)) / (24 * 3600 * 1000)) | 0;
+		}
+
+		return {
+			// 更新模块访问时间
+			update: function(id){
+				var config = getModManage();
+				config[id] = getNow();
+				setModManage(config);
+			},
+			// 删除模块访问时间
+			"delete": function(id){
+				var config = getModManage();
+				delete config[id];
+				setModManage(config);
+			},
+			// 清除最后访问时间超过expires天的模块
+			clear: function(expires){
+				var config = getModManage();
+				var now = getNow();
+				for(var id in config){
+					if(now - config[id] > expires){
+						delete config[id];
+						store.remove(id);
+					}
+				}
+				setModManage(config);
+			}
+		};
+	})();
 	
-	setTimeout(clearMod, 5000);
+	// 清除30天未访问的模块
+	setTimeout(function(){
+		ModVisitManage.clear(30);
+	}, 5000);
 	
 	return {
 		store: store ? {
@@ -457,14 +452,14 @@
 				var mod = store.get(id);
 				if(mod){
 					if((mod = JSON.parse(mod)) && mod.version === version){
-						updateModVisitTime(id);
+						ModVisitManage.update(id);
 						return {
 							deps: mod.deps,
 							factory: parseJson(mod.factory)
 						};
 					}else{
 						store.remove(id);
-						deleteMod(id);
+						ModVisitManage["delete"](id);
 					}
 				}
 			},
@@ -474,7 +469,7 @@
 					deps: deps,
 					factory: factory.toString()
 				}));
-				updateModVisitTime(id);
+				ModVisitManage.update(id);
 			}
 		} : null
 	};
