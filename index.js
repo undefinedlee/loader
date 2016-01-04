@@ -358,6 +358,11 @@
 			versions[[group, modName].join("/")] = version[modName];
 		}
 	};
+
+	/**
+	 * 本地存储
+	 */
+	momo.store = util.nativeStore;
 	
 	// 兼容seajs
 	// global.seajs = global.momo;
@@ -445,8 +450,15 @@
 	setTimeout(function(){
 		ModVisitManage.clear(30);
 	}, 5000);
+
+	function noop(){}
 	
 	return {
+		nativeStore: store || {
+			get: noop,
+			set: noop,
+			remove: noop
+		},
 		store: store ? {
 			get: function(id, version){
 				var mod = store.get(id);
